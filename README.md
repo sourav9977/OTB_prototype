@@ -1,6 +1,6 @@
 # Impetus — OTB Planning Tool
 
-A React-based interactive prototype for **Open-To-Buy (OTB) Planning**, built for retail and fashion brand merchandising teams. The tool enables merchandisers to plan, review, and approve weekly buy budgets through a structured maker-checker-approver workflow.
+A React prototype and FastAPI backend for **Open-To-Buy (OTB) Planning**, built for retail and fashion brand merchandising teams. The tool enables merchandisers to plan, review, and approve weekly buy budgets through a structured maker-checker-approver workflow.
 
 ## Overview
 
@@ -11,139 +11,137 @@ OTB (Open-To-Buy) is the amount of inventory a retailer can purchase during a gi
 - Route OTBs through a multi-stage approval workflow
 - Add contextual remarks on individual data cells for collaboration
 
-## Application Flow
-
-```
-Login → Brand Selection → Dashboard (OTB Planning)
-```
-
-### 1. Authentication
-Users log in with their credentials and select a brand (e.g., Netplay, Azorte) to scope all subsequent data and operations.
-
-### 2. OTB Snapshot View
-A tabbed dashboard organizes OTB versions by lifecycle stage:
-
-| Tab        | Description                                      |
-|------------|--------------------------------------------------|
-| Creation   | OTBs being drafted by Makers                     |
-| Review     | OTBs submitted for Checker review                |
-| Approval   | OTBs pending final Approver sign-off             |
-| Completed  | Approved and finalized OTBs                      |
-| Expired    | OTBs past their validity period                  |
-
-### 3. OTB Detailed View
-A weekly KPI data table with **13 columns** (W19–W31) split into:
-
-- **Actual** (10 weeks) — historical, read-only data
-- **Projected** (3 weeks) — future estimates, editable by Makers
-
-## Key Features
-
-### Role-Based Access Control
-
-| Role     | Permissions                                                        |
-|----------|--------------------------------------------------------------------|
-| Maker    | Create OTBs, edit projected values, submit for review              |
-| Checker  | Review OTBs, approve or request changes, forward to Approver      |
-| Approver | Final approval of OTBs                                             |
-
-### Tracked KPIs
-
-The data table tracks the following metrics across weekly columns:
-
-- **Net Sales** — AOP (Annual Operating Plan), Current Year, Last Year, Achievement vs AOP, Change vs LY
-- **MRP** — AOP, Current Year, Last Year
-- **COGS** — Cost of Goods Sold (AOP and CY)
-- **Inventory** — Opening Inventory, Closing Inventory, Target Cover (Weeks), Target Inventory
-- **Additional Inwards** — Extra incoming stock
-- **OTB Units** — Calculated open-to-buy in units
-- **OTB COGS** — Calculated open-to-buy in cost value
-
-### Inline Editing with Review Mode
-
-When a Maker edits **Target Cover** or **Additional Inwards** in a projected column:
-
-1. The input is validated (range and sanity checks)
-2. Dependent KPIs are auto-recalculated (Target Inventory, OTB Units, OTB COGS)
-3. A review panel displays a side-by-side diff of old vs. new values
-4. The user can **Accept** or **Discard** the change
-
-### Approval Workflow
-
-```
-         Maker                Checker                Approver
-           |                    |                       |
-   Create / Edit OTB            |                       |
-           |                    |                       |
-   Send for Review  ──────►  Review OTB                 |
-           |                    |                       |
-           |              Approve ──────►  Send for Approval
-           |                    |                       |
-           |              Request Change                |
-           |                    |                  Approve OTB
-     ◄─────────────────────     |                       |
-   Revise & Resubmit            |                  ──► Completed
-```
-
-### Comment / Remarks System
-
-- **Right-click any cell** to add a remark via context menu
-- Comments are stored per-OTB, grouped by cell
-- A **side pane** displays all remarks in collapsible cell-grouped sections
-- Users can edit or delete their own comments
-- Cells with remarks show a visual indicator
-
-### Additional Capabilities
-
-- **Create New OTB** — modal form with Version Name, Hit, Drop, and Year fields
-- **Save / Undo / Redo** — unsaved change tracking with navigation guards
-- **Collapsible Sidebar** — navigation across modules (Purchasing, Analytics, Planning, etc.)
-- **Brand Switcher** — switch between brands without re-authentication
-- **Progress Stepper** — visual indicator of OTB lifecycle stage
-
 ## Tech Stack
 
-| Technology   | Purpose               |
-|--------------|-----------------------|
-| React        | UI framework          |
-| TypeScript   | Type safety (TSX)     |
-| Tailwind CSS | Utility-first styling |
-| Lucide React | Icon library          |
+| Layer    | Technology                    |
+|----------|-------------------------------|
+| Backend  | FastAPI + SQLAlchemy + Alembic |
+| Database | SQLite (dev) / PostgreSQL (prod) |
+| Auth     | JWT (python-jose + passlib)   |
+| Frontend | React + TypeScript + Tailwind CSS (prototype) |
 
 ## Project Structure
 
 ```
 OTB_Prototype/
-├── README.md
-└── remixed-a276aa1f.tsx    # Single-file React prototype component
+├── app/
+│   ├── main.py                 # FastAPI entry point
+│   ├── config.py               # Settings (DB URL, JWT secret)
+│   ├── database.py             # SQLAlchemy engine + session
+│   ├── models/                 # ORM models (User, Brand, OTB, KPI, Comment)
+│   ├── schemas/                # Pydantic request/response schemas
+│   ├── routers/                # API route handlers
+│   ├── services/               # Business logic layer
+│   └── utils/
+│       ├── security.py         # JWT + password hashing
+│       ├── rbac.py             # Role-based access dependencies
+│       └── calculations.py     # KPI auto-calculation engine
+├── alembic/                    # Database migrations
+├── seed.py                     # Sample data loader
+├── requirements.txt
+├── .env.example
+└── remixed-a276aa1f.tsx        # React prototype (single-file)
 ```
 
-## Getting Started
+## Quick Start
 
-This is a prototype component designed to be rendered inside a React application. To use it:
+```bash
+# 1. Clone and enter the project
+git clone https://github.com/sourav9977/OTB_prototype.git
+cd OTB_prototype
 
-1. Ensure you have a React project with Tailwind CSS configured
-2. Install the required dependency:
-   ```bash
-   npm install lucide-react
-   ```
-3. Import and render the component:
-   ```tsx
-   import ImpetusApp from './remixed-a276aa1f';
+# 2. Create a virtual environment and install dependencies
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
-   function App() {
-     return <ImpetusApp />;
-   }
-   ```
+# 3. Set up environment variables
+cp .env.example .env
 
-## Data Model (Prototype)
+# 4. Run database migrations
+alembic upgrade head
 
-The prototype uses hardcoded sample data representing:
+# 5. Seed the database with sample data
+python seed.py
 
-- **9 OTB versions** across various workflow statuses
-- Weekly financial data spanning **Jul 2025 – Sep 2025**
-- Financial values in **INR** (Indian Rupees)
-- Sample users: Sourav Nayak, Test User, Chinta Anusha
+# 6. Start the server
+uvicorn app.main:app --reload
+```
+
+The API will be available at **http://localhost:8000** and interactive docs at **http://localhost:8000/docs**.
+
+## API Endpoints
+
+### Authentication (`/api/auth`)
+
+| Method | Endpoint  | Description                     |
+|--------|-----------|---------------------------------|
+| POST   | `/login`  | Authenticate, returns JWT token |
+| GET    | `/me`     | Current user profile + roles    |
+| GET    | `/brands` | Brands accessible to user       |
+
+### OTB Management (`/api/otb`)
+
+| Method | Endpoint              | Description                        |
+|--------|-----------------------|------------------------------------|
+| GET    | `/`                   | List OTBs (filter by status/project) |
+| POST   | `/`                   | Create new OTB (Maker only)        |
+| GET    | `/{otb_id}`           | Get OTB details                    |
+| PATCH  | `/{otb_id}/status`    | Transition OTB status              |
+| GET    | `/{otb_id}/history`   | Audit trail of status changes      |
+
+### KPI Data (`/api/otb/{otb_id}/kpi`)
+
+| Method | Endpoint      | Description                          |
+|--------|---------------|--------------------------------------|
+| GET    | `/`           | All KPI data (actual + projected)    |
+| PATCH  | `/projected`  | Update projected values (Maker only) |
+| POST   | `/review`     | Preview change impact without saving |
+
+### Comments (`/api/otb/{otb_id}/comments`)
+
+| Method | Endpoint          | Description            |
+|--------|-------------------|------------------------|
+| GET    | `/`               | List comments by cell  |
+| POST   | `/`               | Add a comment          |
+| PATCH  | `/{comment_id}`   | Edit own comment       |
+| DELETE | `/{comment_id}`   | Delete own comment     |
+
+## Role-Based Access Control
+
+| Role     | Permissions                                              |
+|----------|----------------------------------------------------------|
+| Maker    | Create OTBs, edit projected KPIs, submit for review      |
+| Checker  | Review OTBs, approve or request changes, forward to Approver |
+| Approver | Final approval of OTBs                                   |
+
+## Approval Workflow
+
+```
+in_progress ──[Maker]──► in_review ──[Checker]──► pending_approval ──[Approver]──► approved
+                              │
+                              └──[Checker]──► change_requested ──[Maker]──► in_review
+```
+
+## Sample Users (after seeding)
+
+| Email               | Password      | Role (Netplay) |
+|---------------------|---------------|----------------|
+| sourav@fynd.team    | password123   | Maker          |
+| testuser@fynd.team  | password123   | Checker        |
+| anusha@fynd.team    | password123   | Approver       |
+
+## KPI Calculation Engine
+
+When editable KPIs change, dependent values are auto-recalculated:
+
+- **Target Cover** change triggers: Target Inventory, OTB Units, OTB COGS
+- **Additional Inwards** change triggers: OTB Units, OTB COGS
+
+Formulas:
+- `Target Inventory = Avg Weekly Sales × Target Cover`
+- `OTB Units = Target Inventory - Closing Inventory + Expected Sales - Additional Inwards`
+- `OTB COGS = OTB Units × Avg Cost Per Unit`
 
 ## License
 
